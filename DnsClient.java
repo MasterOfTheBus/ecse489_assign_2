@@ -69,7 +69,9 @@ public class DnsClient {
 
     DnsPacket packet = new DnsPacket(server, name, type);
 
-    sendRequest(packet, timeout, max_retries, port);
+    DnsPacket.convertId(packet.id);
+
+    //sendRequest(packet, timeout, max_retries, port);
     
     return;
   }
@@ -88,8 +90,11 @@ public class DnsClient {
     System.out.println("Request type: " + packet.type);
 
     byte[] sendData = new byte[1024];
+    byte[] receiveData = new byte[1024];
     sendData = packet.name.getBytes();
-    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.destServer, 9876);
+    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.destServer, port);
+    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+    
     try {
       socket.send(sendPacket);
     } catch (IOException ie) {
@@ -97,8 +102,6 @@ public class DnsClient {
       return;
     }
 
-    byte[] receiveData = new byte[1024];
-    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
     try {
       socket.receive(receivePacket);
     } catch (IOException ie) {
