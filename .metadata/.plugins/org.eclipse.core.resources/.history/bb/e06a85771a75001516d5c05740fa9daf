@@ -1,0 +1,98 @@
+/**
+ * UDPClient
+ * 
+ * Adapted from the example given in Section 2.8 of Kurose and Ross, Computer
+ * Networking: A Top-Down Approach (5th edition)
+ * 
+ * @author michaelrabbat
+ * 
+ */
+import java.io.*;
+import java.net.*;
+import java.nio.ByteBuffer;
+
+public class ExampleUDPClient {
+
+	public static void main(String args[]) throws Exception
+	{
+		ByteBuffer hBuf = ByteBuffer.allocate(12);
+		byte b = -128; 
+		hBuf.put(b);
+		int temp = hBuf.position();
+	//	System.out.println(b);
+	//	System.out.println(temp);
+		byte r= hBuf.get();
+	//	System.out.println(r);
+		byte a = 0b00000111;
+		//byte c = Byte.parseByte("1000",16);
+	//	System.out.println(b);
+		//System.out.println(c);
+		
+		int bitmask = 0x000F;
+        int val = 0x2222;
+//        System.out.println(val&bitmask);
+        int wRep=0x77;
+//        char A='a';
+//        
+//        char W= (char)119;
+//        System.out.println(W);
+//System.out.println(wRep);
+//     System.out.println((byte)'w');
+////        hBuf.putChar(A);
+////        System.out.println((int)hBuf.getChar(2));
+//        
+     
+     
+     byte[] result = constructQuestion();
+     int size=result.length;
+//     System.out.print(size);
+//     for (int i=0;i<size;i++){
+//    	 
+//    	 System.out.print(result[i]);
+//    	 
+//    	 
+//     }
+     
+     
+	}
+	
+	
+	
+	public static byte[] constructQuestion() {
+		String name="www.mcgill.ca";
+	    String[] labels=name.split(",");
+	    int lengthCounter=0;
+	    int numOfLabels= labels.length;
+	    System.out.println(labels[0]);
+	    for(int i=0;i<numOfLabels;i++){
+	    	lengthCounter+= labels[i].length();
+	    }
+	    byte[] question = new byte[lengthCounter+numOfLabels+1];
+	    int counter=0;
+	    for(int i=0;i<numOfLabels;i++){   	
+	    	char[] chars=labels[i].toCharArray();
+	    	int numOfChars=chars.length;
+	    	question[counter]=(byte)numOfChars;
+	    	counter++;
+	    	for(int j=0;j<numOfChars;j++){
+	    	
+	    	question[counter]=(byte)chars[j];
+	    	counter++;
+	    	}
+
+	    }
+	    question[counter]=(byte)0;
+	    counter++;
+	    return question;
+	  }
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}

@@ -1,0 +1,108 @@
+import java.net.*;
+import java.io.*;
+import java.util.*;
+import java.nio.*;
+
+public class DnsPacket {
+  InetAddress destServer;
+  String name, type;
+  ByteBuffer data;
+  byte[] id = new byte[2]; // this is going to represent a 16 bit unsigned number
+
+  public DnsPacket(String server, String name, String type) {
+    // store the value of the destination server as an inet address
+    int periodIndex = 0;
+    int start = 0;
+    byte[] str2byte = new byte[4];
+    for (int i = 0; i < str2byte.length; i++) {
+      int end = server.indexOf('.', periodIndex);
+      if (end == -1) end = server.length();
+      int fromAddr = Integer.parseInt(server.substring(start, end));
+      if (fromAddr < 0 || fromAddr > 255) {
+	System.out.printf("ERROR\tInvalid IP address: " + server);
+      }
+      str2byte[i] = (new Integer(fromAddr)).byteValue();
+
+      start = end + 1;
+      periodIndex = end + 1;
+    }
+
+    try {
+      destServer = InetAddress.getByAddress(str2byte);
+    } catch (UnknownHostException e) {
+      System.out.println("ERROR\tUnknown Host: " + server);
+      return;
+    }
+
+    this.name = name;
+    this.type = type;
+
+    // the data has been passed correctly, assign a random id number
+    Random rand = new Random();
+    rand.nextBytes(id);
+
+    // create the bytebuffer that will store all the data
+    // the amount of data to allocate is 2 bytes * 6 (header) + 63 + 16 * 2 (question)
+    data.allocate(2 * 6 + 63 + 16 * 2);
+
+    constructHeader();
+    
+  }
+
+  public static int convertId(byte[] id) {
+    int ret = id[0];
+    if (ret < 0) ret += 256;
+    ret = ret << 8;
+    int temp = id[1];
+    if (id[1] < 0) temp += 256;
+    ret += temp;
+    return ret;
+  }
+
+  private void constructHeader() {
+	  ByteBuffer hBuf = ByteBuffer.allocate(12);
+	 hBuf.put(id[0]);
+	 hBuf.put(id[1]);
+	 
+	 int QR=0;
+	 int OPCODE=0000;
+	 int AA=1;
+	 int TC=0;
+	 int RD=1;
+	 int RA=0;
+	 int Z=000;
+	 int RCODE=0000;
+	 int QDCOUNT=0000000000000001;
+	 int ANCOUNT=0000000000000000;
+	 int NSCOUNT=0000000000000000;
+	 int ARCOUNT=0000000000000000;
+	 byte ln21= Byte.parseByte(""+QR+OPCODE+AA+TC+RD,2);
+	 byte ln22= Byte.parseByte(""+RA+Z+RCODE,2);
+	 byte ln31= Byte.parseByte("00000000",2);
+	 byte ln32= Byte.parseByte("00000001",2);
+	 byte ln41= Byte.parseByte("00000000",2);
+	 byte ln42= Byte.parseByte("00000000",2);
+	 byte ln51= Byte.parseByte("00000000",2);
+	 byte ln52= Byte.parseByte("00000000",2);
+	 byte ln61= Byte.parseByte("00000000",2);
+	 byte ln62= Byte.parseByte("00000000",2);
+	 hBuf.put(ln21);
+	 hBuf.put(ln22);
+	 hBuf.put(ln31);
+	 hBuf.put(ln32);
+	 hBuf.put(ln41);
+	 hBuf.put(ln42);
+	 hBuf.put(ln51);
+	 hBuf.put(ln52);
+	 hBuf.put(ln61);
+	 hBuf.put(ln62);
+	 
+  }
+
+  public byte[] constructQuestion() {
+    byte[] question = new byte[0];
+
+    return question;
+  }
+
+}
