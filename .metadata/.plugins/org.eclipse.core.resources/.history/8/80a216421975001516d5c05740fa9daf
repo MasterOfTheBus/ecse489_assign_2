@@ -1,0 +1,45 @@
+/**
+ * UDPClient
+ * 
+ * Adapted from the example given in Section 2.8 of Kurose and Ross, Computer
+ * Networking: A Top-Down Approach (5th edition)
+ * 
+ * @author michaelrabbat
+ * 
+ */
+import java.io.*;
+import java.net.*;
+import java.nio.ByteBuffer;
+
+public class ExampleUDPClient {
+
+	public static void main(String args[]) throws Exception
+	{
+		ByteBuffer hBuf = ByteBuffer.allocate(12);
+		byte b = -128; 
+		hBuf.put(b);
+		int temp = hBuf.position();
+	//	System.out.println(b);
+	//	System.out.println(temp);
+		byte r= hBuf.get();
+	//	System.out.println(r);
+		byte a = 0b00000111;
+		//byte c = Byte.parseByte("1000",16);
+	//	System.out.println(b);
+		//System.out.println(c);
+		
+		int bitmask = 0x000F;
+        int val = 0x2222;
+        System.out.println(val&bitmask);
+        int wRep=0x77;
+        char A='a';
+        
+        char W= (char)119;
+        System.out.println(W);
+System.out.println(wRep);
+     System.out.println((byte)'w');
+//        hBuf.putChar(A);
+//        System.out.println((int)hBuf.getChar(2));
+        
+	}
+}
