@@ -4,6 +4,7 @@ import java.net.*;
 public class DnsClient {
 
   static final String usage_str = "Usage is: java DnsClient [-t timeout] [-r max-retries] [-p port] [-mx|-ns] @server name";
+  static final String unexpected_str = "ERROR\tUnexpected Response: ";
 
   public static void main(String[] args) {
     int timeout = 5; // seconds
@@ -97,11 +98,15 @@ public class DnsClient {
       DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
    
       int attempt = 0;
+      long millis = System.currentTimeMillis();
       while (attempt < max_retries) {
-        System.out.println("attempt: " + attempt);
         try {
           socket.send(sendPacket);
 	  socket.receive(receivePacket);
+	  if (receivePacket.getData().length == 0) {
+	    attempt++;
+	    continue;
+	  }
 	  break;
         } catch (IOException ie) {
           if (ie instanceof SocketTimeoutException) {
@@ -112,11 +117,14 @@ public class DnsClient {
 	  }
         }
       }
+      millis = System.currentTimeMillis() - millis;
       
       if (attempt == max_retries) {
         System.out.println("ERROR\tMaximum number of retries " + max_retries + " exceeded");
         return (new byte[0]);
       }
+
+      System.out.println("\nResponse received after " + millis / 1000.0 + " seconds (" + attempt + " retries)");
 
       String receivedStr = new String(receivePacket.getData());
       System.out.println("FROM SERVER: " + receivedStr);
@@ -132,8 +140,36 @@ public class DnsClient {
   }
 
   static void parseReceivedData(DnsPacket packet, byte[] data) {
-    byte A = 0x3;
-    System.out.println("A: " + A);
+    boolean auth = false;
+/*
+    // compare the ids
+    if (packet.id[0] != data[0] && packet.id[1] != data[1]) {
+	System.out.println(unexpected_str + "Query and Response ids do not match");
+	return;
+    }
+
+    // check for the response flag
+    if ((int)data[2] & 0x80 != 0x80) {
+	System.out.println(unexpected_str + "Packet received does not contain a DNS response");
+    }
+
+    // Check the OPCODE
+    if ((int)data[2] & 0x78 != 0x00) {
+	System.out.println(unexpected_str + "Response is not for a standard query");
+    }
+
+    // Check the auth bit
+    auth = ((int)data[2] & 0x04 == 0x04) ? 1 : 0;
+
+    // Check RA
+    if ((int)data[3] & 0x80 != 0x80) {
+	System.out.println("Warning: Server does not support recursive queries");
+    }
+
+    // parse the header data - 6 16-bit
+    ByteBuffer recvData;
+    recvData.allocate(data.length);
+*/
   }
 
 }
