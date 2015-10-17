@@ -70,13 +70,14 @@ public class DnsClient {
 
     DnsPacket packet = new DnsPacket(server, name, type);
 
-    byte[] data = sendRequest(packet, timeout, max_retries, port);
-    parseReceivedData(packet, data);
+    DnsPacket.convertId(packet.id);
+
+    //sendRequest(packet, timeout, max_retries, port);
     
     return;
   }
 
-  static byte[] sendRequest(DnsPacket packet, int timeout, int max_retries, int port) {
+  static void sendRequest(DnsPacket packet, int timeout, int max_retries, int port) {
     try {
       DatagramSocket socket = new DatagramSocket();
     
@@ -131,13 +132,11 @@ public class DnsClient {
 
       socket.close();
 
-      return (receivePacket.getData());
-    
     } catch (SocketException se) {
 	System.out.println("ERROR\tCould not create socket");
-	return (new byte[0]);
+	return;
     }
-  }
+ }
 
   static void parseReceivedData(DnsPacket packet, byte[] data) {
     boolean auth = false;
@@ -170,6 +169,6 @@ public class DnsClient {
     ByteBuffer recvData;
     recvData.allocate(data.length);
 */
-  }
+ }
 
 }

@@ -43,9 +43,20 @@ public class DnsPacket {
 
     // create the bytebuffer that will store all the data
     // the amount of data to allocate is 2 bytes * 6 (header) + 63 + 16 * 2 (question)
-    data.allocate(2 * 6 + 63 + 16 * 2);
+    //data.allocate(2 * 6 + 63 + 16 * 2);
 
-    constructHeader();
+    byte[] header=constructHeader();
+    byte[] question=constructQuestion();
+    
+    data.allocate(header.length+question.length);
+    
+    for(int i=0;i<header.length;i++){
+    	data.put(header[i]);
+    }
+    
+    for(int i=0;i<question.length;i++){
+    	data.put(question[i]);
+    }
     
   }
 
@@ -59,14 +70,124 @@ public class DnsPacket {
     return ret;
   }
 
-  private void constructHeader() {
-
+  private byte[] constructHeader() {
+	  
+	  byte[] header= new byte[12];
+	  
+	  header[0]=id[0];
+	  header[1]=id[1];
+	  header[2]=0b00000101;
+	  header[3]=0x00;
+	  header[4]=0x00;
+	  header[5]=0x01;
+	  header[6]=0x00;
+	  header[7]=0x00;
+	  header[8]=0x00;
+	  header[9]=0x00;
+	  header[10]=0x00;
+	  header[11]=0x00;
+	  
+	  
+	  
+	  
+	  
+	  
+	  return header;
+	  
+//	  ByteBuffer hBuf = ByteBuffer.allocate(12);
+//	 hBuf.put(id[0]);
+//	 hBuf.put(id[1]);
+//	 
+//	 int QR=0;
+//	 int OPCODE=0000;
+//	 int AA=1;
+//	 int TC=0;
+//	 int RD=1;
+//	 int RA=0;
+//	 int Z=000;
+//	 int RCODE=0000;
+//	 int QDCOUNT=0000000000000001;
+//	 int ANCOUNT=0000000000000000;
+//	 int NSCOUNT=0000000000000000;
+//	 int ARCOUNT=0000000000000000;
+//	 byte ln21= Byte.parseByte(""+QR+OPCODE+AA+TC+RD,2);
+//	 byte ln22= Byte.parseByte(""+RA+Z+RCODE,2);
+//	 byte ln31= Byte.parseByte("00000000",2);
+//	 byte ln32= Byte.parseByte("00000001",2);
+//	 byte ln41= Byte.parseByte("00000000",2);
+//	 byte ln42= Byte.parseByte("00000000",2);
+//	 byte ln51= Byte.parseByte("00000000",2);
+//	 byte ln52= Byte.parseByte("00000000",2);
+//	 byte ln61= Byte.parseByte("00000000",2);
+//	 byte ln62= Byte.parseByte("00000000",2);
+//	 hBuf.put(ln21);
+//	 hBuf.put(ln22);
+//	 hBuf.put(ln31);
+//	 hBuf.put(ln32);
+//	 hBuf.put(ln41);
+//	 hBuf.put(ln42);
+//	 hBuf.put(ln51);
+//	 hBuf.put(ln52);
+//	 hBuf.put(ln61);
+//	 hBuf.put(ln62);
+	 
   }
 
   public byte[] constructQuestion() {
-    byte[] question = new byte[0];
+		
+	  
+	 //QNAME
+	    String[] labels=name.split("\\.");
+	    int lengthCounter=0;
+	    int numOfLabels= labels.length;
+	    for(int i=0;i<numOfLabels;i++){
+	    	lengthCounter+= labels[i].length();
+	    }
+	    //Labels+chars+2 from QType+2 from QClass
+	    byte[] question = new byte[lengthCounter+numOfLabels+5];
+	    int counter=0;
+	    for(int i=0;i<numOfLabels;i++){   	
+	    	char[] chars=labels[i].toCharArray();
+	    	int numOfChars=chars.length;
+	    	question[counter]=(byte)numOfChars;
+	    	counter++;
+	    	for(int j=0;j<numOfChars;j++){
+	    	
+	    	question[counter]=(byte)chars[j];
+	    	counter++;
+	    	}
 
-    return question;
-  }
+	    }
+	    question[counter]=(byte)0;
+	    counter++;
+	    //QTYPE
+	    if(type.equals("A")){
+	    	question[counter]=0x00;
+	    	counter++;
+	    	question[counter]=0x01;
+	    	counter++;
+	    	
+	    }
+	    else if(type.equals("MX")){
+	    	question[counter]=0x00;
+	    	counter++;
+	    	question[counter]=0x0f;
+	    	counter++;
+	    }else if(type.equals("NS")){
+	    	question[counter]=0x00;
+	    	counter++;
+	    	question[counter]=0x02;
+	    	counter++;
+	    }else{
+	    	System.out.println("ERROR:Entered type "+ type +" is not determinable");
+	    	
+	    }
 
+	    //QCLASS
+	    question[counter]=0x00;
+    	counter++;
+    	question[counter]=0x01;
+    	counter++;
+	    return question;
+	 }
 }
