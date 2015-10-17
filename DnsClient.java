@@ -69,71 +69,49 @@ public class DnsClient {
 
     DnsPacket packet = new DnsPacket(server, name, type);
 
-    byte[] data = sendRequest(packet, timeout, max_retries, port);
-    parseReceivedData(packet, data);
+    DnsPacket.convertId(packet.id);
+
+    //sendRequest(packet, timeout, max_retries, port);
     
     return;
   }
 
-  static byte[] sendRequest(DnsPacket packet, int timeout, int max_retries, int port) {
+  static void sendRequest(DnsPacket packet, int timeout, int max_retries, int port) {
+    DatagramSocket socket;
     try {
-      DatagramSocket socket = new DatagramSocket();
-    
-      try {
-        socket.setSoTimeout(timeout);
-      } catch (SocketException se) {
-        System.out.println("ERROR\tFailed to set socket timeout " + timeout);
-        return (new byte[0]);
-      }
-
-      System.out.println("DnsClient sending request for " + packet.name);
-      System.out.println("Server: " + packet.destServer.toString().substring(1));
-      System.out.println("Request type: " + packet.type);
-
-      byte[] sendData = new byte[1024];
-      byte[] receiveData = new byte[1024];
-      sendData = packet.name.getBytes();
-      DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.destServer, port);
-      DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-   
-      int attempt = 0;
-      while (attempt < max_retries) {
-        System.out.println("attempt: " + attempt);
-        try {
-          socket.send(sendPacket);
-	  socket.receive(receivePacket);
-	  break;
-        } catch (IOException ie) {
-          if (ie instanceof SocketTimeoutException) {
-	    attempt++;
-	  } else {
-            System.out.println("ERROR\tSocket I/O error");
-            return (new byte[0]);
-	  }
-        }
-      }
-      
-      if (attempt == max_retries) {
-        System.out.println("ERROR\tMaximum number of retries " + max_retries + " exceeded");
-        return (new byte[0]);
-      }
-
-      String receivedStr = new String(receivePacket.getData());
-      System.out.println("FROM SERVER: " + receivedStr);
-
-      socket.close();
-
-      return (receivePacket.getData());
-    
+      socket = new DatagramSocket();
     } catch (SocketException se) {
 	System.out.println("ERROR\tCould not create socket");
-	return (new byte[0]);
+	return;
     }
-  }
 
-  static void parseReceivedData(DnsPacket packet, byte[] data) {
-    byte A = 0x3;
-    System.out.println("A: " + A);
+    System.out.println("DnsClient sending request for " + packet.name);
+    System.out.println("Server: " + packet.destServer.toString().substring(1));
+    System.out.println("Request type: " + packet.type);
+
+    byte[] sendData = new byte[1024];
+    byte[] receiveData = new byte[1024];
+    sendData = packet.name.getBytes();
+    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.destServer, port);
+    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+    
+    try {
+      socket.send(sendPacket);
+    } catch (IOException ie) {
+      System.out.println("ERROR\tCould not send packet.");
+      return;
+    }
+
+    try {
+      socket.receive(receivePacket);
+    } catch (IOException ie) {
+      System.out.println("ERROR\tCould not receive packet.");
+      return;
+    }
+    String modSent = new String(receivePacket.getData());
+    System.out.println("FROM SERVER: " + modSent);
+
+    socket.close();
   }
 
 }
