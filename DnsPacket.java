@@ -12,7 +12,7 @@ public class DnsPacket {
   public static final int A_TYPE = 0x0001;
   public static final int NS_TYPE = 0x0002;
   public static final int CNAME_TYPE = 0x0005;
-  public static final int MX_TYPE = 0x000f;
+  public static final int MX_TYPE = 0x00f;
 
   public DnsPacket(String server, String name, String type) {
     // store the value of the destination server as an inet address
@@ -227,13 +227,15 @@ public class DnsPacket {
     int position = -1;
     
     String domain = "";
-/*    byte fromBuf = data.get();
+    byte fromBuf = data.get();
     if ((fromBuf & 0xc0) == (0xc0)) {
       byte[] two_bytes = {(new Integer(fromBuf & 0x03)).byteValue(), data.get()};
       position = data.position();
       int newPos = convertId(two_bytes);
       data.position(newPos);
-    }*/
+    } else {
+      data.position(data.position() - 1);
+    }
     int label_length = (int)data.get();
     while (label_length != 0) {
       for (int i = 0; i < label_length; i++) {
@@ -252,7 +254,9 @@ public class DnsPacket {
     if (type == A_TYPE) {
       ret = new String[]{""};
       for (int i = 0; i < length; i++) {
-	ret[0] += (int)data.get() + ".";
+        int octet = data.get();
+	if (octet < 0) octet += 256;
+	ret[0] += octet + ".";
       }
       ret[0] = ret[0].substring(0, ret[0].length() - 1);
     } else if (type == NS_TYPE) {

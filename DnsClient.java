@@ -200,10 +200,6 @@ public class DnsClient {
 
     // get through the question section
     String name = DnsPacket.parseName(recvData);
-    System.out.println("name: " + name);
-
-    //recvData.get(two_bytes);
-    //recvData.get(two_bytes);
 
     recvData.position(recvData.position() + 4);
 
@@ -214,14 +210,13 @@ public class DnsClient {
     for (int i = 0; i < ancount; i++) {
       // name
       name = DnsPacket.parseName(recvData);
-      System.out.println("name: " + name);
 
       // type
       recvData.get(two_bytes);
       int type = DnsPacket.convertId(two_bytes);
-      if (type != DnsPacket.A_TYPE || type != DnsPacket.NS_TYPE || type != DnsPacket.CNAME_TYPE ||
+      if (type != DnsPacket.A_TYPE && type != DnsPacket.NS_TYPE && type != DnsPacket.CNAME_TYPE &&
 	  type != DnsPacket.MX_TYPE) {
-	//System.out.println(unexpected_str + "Unexpected record type");
+	System.out.println(unexpected_str + "Unexpected record type " + type);
 	repositionBuffer(recvData, 6);
 	continue;
       }
@@ -246,9 +241,9 @@ public class DnsClient {
 
       String[] alias = DnsPacket.parseRData(recvData, rdlength, type);
       if (type == DnsPacket.A_TYPE || type == DnsPacket.CNAME_TYPE || type == DnsPacket.NS_TYPE) {
-	System.out.println(DnsPacket.typeToString(type) + "\t" + alias + "\t" + TTL + ((auth) ? "auth" : "noauth"));
+	System.out.println(DnsPacket.typeToString(type) + "\t" + alias[0] + "\t" + TTL + "\t" + ((auth) ? "auth" : "noauth"));
       } else if (type == DnsPacket.MX_TYPE) {
-	System.out.println("MX\t" + alias[0] + "\t" + alias[1] + "\t" + TTL + ((auth) ? "auth" : "noauth"));	
+	System.out.println("MX\t" + alias[0] + "\t" + alias[1] + "\t" + TTL + "\t" + ((auth) ? "auth" : "noauth"));	
       } else {
 	System.out.println("ERROR\tUnrecognized DNS type");
       }
