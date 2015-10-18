@@ -196,4 +196,51 @@ public class DnsPacket {
     	counter++;
 	    return question;
 	 }
+
+  public static String evaluateRCode(int rcode, boolean auth) {
+    switch (rcode) {
+      case 0:
+        return "";
+      case 1:
+        return ("ERROR\tResponse from server returned: Format Error");
+      case 2:
+        return ("ERROR\tResponse from server returned: Server Failure");
+      case 3:
+        return ((auth) ? ("NOTFOUND\tDomain does not exist") : "");
+      case 4:
+        return ("ERROR\tResponse from server returned: Not implemented. Server does not support requested query");
+      case 5:
+        return ("ERROR\tResponse form server returned: Requested operation refused");
+      default:
+        return ("WARNING\tUnknown return code from server");
+    }
+  }
+
+  static final int headerLength = 12; // bytes
+
+  
+
+  public static String parseName(ByteBuffer data) {
+    int position = -1;
+    
+    String domain = "";
+/*    byte fromBuf = data.get();
+    if ((fromBuf & 0xc0) == (0xc0)) {
+      byte[] two_bytes = {(new Integer(fromBuf & 0x03)).byteValue(), data.get()};
+      position = data.position();
+      int newPos = convertId(two_bytes);
+      data.position(newPos);
+    }*/
+    int label_length = (int)data.get();
+    while (label_length != 0) {
+      for (int i = 0; i < label_length; i++) {
+	domain += ((char)data.get());
+      }
+
+      label_length = (int)data.get();
+    }
+
+    if (position != -1) data.position(position);
+    return domain;
+  }
 }

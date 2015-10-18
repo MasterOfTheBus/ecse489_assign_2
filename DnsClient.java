@@ -141,62 +141,95 @@ public class DnsClient {
  }
 
   static void parseReceivedData(DnsPacket packet, byte[] data) {
+    ByteBuffer recvData;
+    recvData = ByteBuffer.allocate(data.length);
+    recvData.put(data);
+    recvData.position(0);
+
     boolean auth = false;
 
-    //ByteBuffer recvData;
-    //recvData = ByteBuffer.allocate(data.length);
-   
-    // compare the ids
-    if (packet.id[0] != data[0] && packet.id[1] != data[1]) {
+   //================HEADER===============
+
+   // compare the ids
+    byte[] two_bytes = new byte[2];
+    recvData.get(two_bytes);
+    if (DnsPacket.convertId(packet.id) != DnsPacket.convertId(two_bytes)) {
 	System.out.println(unexpected_str + "Query and Response ids do not match");
 	return;
     }
 
+    recvData.get(two_bytes);
     // check for the response flag
-    if (((int)data[2] & 0x80) != 0x80) {
+    if (((int)two_bytes[0] & 0x80) != 0x80) {
 	System.out.println(unexpected_str + "Packet received does not contain a DNS response");
     }
     
     // Check the OPCODE
-    if (((int)data[2] & 0x78) != 0x00) {
+    if (((int)two_bytes[0] & 0x78) != 0x00) {
 	System.out.println(unexpected_str + "Response is not for a standard query");
     }
 
     // Check the auth bit
-    auth = (((int)data[2] & 0x04) == 0x04) ? true : false;
+    auth = (((int)two_bytes[0] & 0x04) == 0x04) ? true : false;
 
     // Check RA
-    if (((int)data[3] & 0x80) != 0x80) {
+    if (((int)two_bytes[1] & 0x80) != 0x80) {
 	System.out.println("WARNING\tServer does not support recursive queries");
     }
 
     // Check the RCode
-    int rcode = (int)data[3] & 0x0F;
-    switch (rcode) {
-      case 0:
-	break;
-      case 1:
-        System.out.println("ERROR\tResponse from server returned: Format Error");
-        break;
-      case 2:
-        System.out.println("ERROR\tResponse from server returned: Server Failure");
-        break;
-      case 3:
-        if (auth) System.out.println("NOTFOUND\tDomain name does not exist" + packet.name);
-        break;
-      case 4:
-        System.out.println("ERROR\tResponse from server returned: Not implemented. Server does not support requested query");
-        break;
-      case 5:
-        System.out.println("ERROR\tResponse form server returned: Requested operation refused");
-        break;
-      default:
-        System.out.println("WARNING\tUnknown return code from server");
-        break;
+    int rcode = (int)two_bytes[1] & 0x0F;
+    String rcodeRet = DnsPacket.evaluateRCode(rcode, auth);
+    System.out.println(rcodeRet);
+    if (rcodeRet.startsWith("ERROR")) return;
+
+    // the function takes a 2 byte array, might as well use it...
+    recvData.get(two_bytes); // bytes 4, 5
+
+    // check the question count
+    int qdcount = DnsPacket.convertId(two_bytes);
+
+    recvData.get(two_bytes); // bytes 6, 7
+    int ancount = DnsPacket.convertId(two_bytes); 
+
+    recvData.get(two_bytes);
+    recvData.get(two_bytes); // bytes 10, 11
+    int arcount = DnsPacket.convertId(two_bytes);
+
+    //=============HEADER END====================
+
+    // get through the question section
+    String name = DnsPacket.parseName(recvData);
+    System.out.println("name: " + name);
+
+    recvData.get(two_bytes);
+    recvData.get(two_bytes);
+
+    //=============ANSWER===================
+    System.out.println("***Answer Section (" + ancount + ")***");
+    if (ancount == 0) System.out.println("NOTFOUND");
+
+    for (int i = 0; i < ancount; i++) {
+     //  String name = DnsPacket.parseName(recvData);
+     // System.out.println("name: " + name);
+
+
     }
 
- //   int ancount = 
-    System.out.println("no formatting issues");
+    //=============ANSWER END=========================
+
+    //===============ADDITIONAL SECTION================
+    System.out.println("***Additional Section (" + arcount + ")***");
+    if (arcount == 0) System.out.println("NOTFOUND");
+ 
+
  }
 
+  private static String printAsBinary(byte[] convert) {
+    String ret = "";
+    for (int i = 0; i < convert.length; i++) {
+      ret += Integer.toBinaryString((convert[i] & 0xFF) + 0x100).substring(1);
+    }
+    return ret;
+  }
 }
