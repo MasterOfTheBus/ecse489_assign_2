@@ -207,16 +207,45 @@ public class DnsClient {
     System.out.println("***Answer Section (" + ancount + ")***");
     if (ancount == 0) System.out.println("NOTFOUND");
 
-    for (int i = 0; i < ancount; i++) {
+    parseAnswerOrAdditional(recvData, ancount, auth);
+
+    //=============ANSWER END=========================
+
+    //===============ADDITIONAL SECTION================
+    System.out.println("***Additional Section (" + arcount + ")***");
+    if (arcount == 0) System.out.println("NOTFOUND");
+ 
+    parseAnswerOrAdditional(recvData, arcount, auth);
+ }
+
+  private static String printAsBinary(byte[] convert) {
+    String ret = "";
+    for (int i = 0; i < convert.length; i++) {
+      ret += Integer.toBinaryString((convert[i] & 0xFF) + 0x100).substring(1);
+    }
+    return ret;
+  }
+
+  private static void repositionBuffer(ByteBuffer buff, int offset) {
+    byte two_bytes[] = new byte[2];
+    buff.position(buff.position() + offset);
+    buff.get(two_bytes);
+    int rdlength = DnsPacket.convertId(two_bytes);
+    buff.position(buff.position() + rdlength);
+  }
+
+  private static void parseAnswerOrAdditional(ByteBuffer recvData, int count, boolean auth) {
+    for (int i = 0; i < count; i++) {
       // name
-      name = DnsPacket.parseName(recvData);
+      String name = DnsPacket.parseName(recvData);
 
       // type
+      byte two_bytes[] = new byte[2];
       recvData.get(two_bytes);
       int type = DnsPacket.convertId(two_bytes);
       if (type != DnsPacket.A_TYPE && type != DnsPacket.NS_TYPE && type != DnsPacket.CNAME_TYPE &&
 	  type != DnsPacket.MX_TYPE) {
-	System.out.println(unexpected_str + "Unexpected record type " + type);
+	System.out.println("Unrecognized record type " + type);
 	repositionBuffer(recvData, 6);
 	continue;
       }
@@ -249,28 +278,5 @@ public class DnsClient {
       }
    }
 
-    //=============ANSWER END=========================
-
-    //===============ADDITIONAL SECTION================
-    System.out.println("***Additional Section (" + arcount + ")***");
-    if (arcount == 0) System.out.println("NOTFOUND");
- 
-
- }
-
-  private static String printAsBinary(byte[] convert) {
-    String ret = "";
-    for (int i = 0; i < convert.length; i++) {
-      ret += Integer.toBinaryString((convert[i] & 0xFF) + 0x100).substring(1);
-    }
-    return ret;
-  }
-
-  private static void repositionBuffer(ByteBuffer buff, int offset) {
-    byte two_bytes[] = new byte[2];
-    buff.position(buff.position() + offset);
-    buff.get(two_bytes);
-    int rdlength = DnsPacket.convertId(two_bytes);
-    buff.position(buff.position() + rdlength);
   }
 }
