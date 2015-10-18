@@ -9,6 +9,11 @@ public class DnsPacket {
   ByteBuffer data;
   byte[] id = new byte[2]; // this is going to represent a 16 bit unsigned number
 
+  public static final int A_TYPE = 0x0001;
+  public static final int NS_TYPE = 0x0002;
+  public static final int CNAME_TYPE = 0x0005;
+  public static final int MX_TYPE = 0x000f;
+
   public DnsPacket(String server, String name, String type) {
     // store the value of the destination server as an inet address
     int periodIndex = 0;
@@ -218,8 +223,6 @@ public class DnsPacket {
 
   static final int headerLength = 12; // bytes
 
-  
-
   public static String parseName(ByteBuffer data) {
     int position = -1;
     
@@ -242,5 +245,49 @@ public class DnsPacket {
 
     if (position != -1) data.position(position);
     return domain;
+  }
+
+  public static String[] parseRData(ByteBuffer data, int length, int type) {
+    String ret[];
+    if (type == A_TYPE) {
+      ret = new String[]{""};
+      for (int i = 0; i < length; i++) {
+	ret[0] += (int)data.get() + ".";
+      }
+      ret[0] = ret[0].substring(0, ret[0].length() - 1);
+    } else if (type == NS_TYPE) {
+      ret = new String[]{parseName(data)};
+    } else if (type == CNAME_TYPE) {
+      ret = new String[]{""};
+      for (int i = 0; i < length; i++) {
+	ret[0] += (char)data.get();
+      }
+    } else if (type == MX_TYPE) {
+      ret = new String[]{"", ""};
+      byte[] two_bytes = new byte[2];
+      data.get(two_bytes);
+      ret[1] = (new Integer(convertId(two_bytes))).toString();
+
+      ret[0] = parseName(data);
+    } else {
+      return (new String[]{""});
+    }
+
+    return ret;
+  }
+
+  public static String typeToString(int type) {
+    switch (type) {
+      case A_TYPE:
+        return "IP";
+      case CNAME_TYPE:
+        return "CNAME";
+      case MX_TYPE:
+        return "MX";
+      case NS_TYPE:
+        return "NS";
+      default:
+        return "";
+    }
   }
 }

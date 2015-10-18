@@ -192,7 +192,7 @@ public class DnsClient {
     recvData.get(two_bytes); // bytes 6, 7
     int ancount = DnsPacket.convertId(two_bytes); 
 
-    recvData.get(two_bytes);
+    recvData.position(recvData.position() + 2);
     recvData.get(two_bytes); // bytes 10, 11
     int arcount = DnsPacket.convertId(two_bytes);
 
@@ -202,19 +202,57 @@ public class DnsClient {
     String name = DnsPacket.parseName(recvData);
     System.out.println("name: " + name);
 
-    recvData.get(two_bytes);
-    recvData.get(two_bytes);
+    //recvData.get(two_bytes);
+    //recvData.get(two_bytes);
+
+    recvData.position(recvData.position() + 4);
 
     //=============ANSWER===================
     System.out.println("***Answer Section (" + ancount + ")***");
     if (ancount == 0) System.out.println("NOTFOUND");
 
     for (int i = 0; i < ancount; i++) {
-     //  String name = DnsPacket.parseName(recvData);
-     // System.out.println("name: " + name);
+      // name
+      name = DnsPacket.parseName(recvData);
+      System.out.println("name: " + name);
 
+      // type
+      recvData.get(two_bytes);
+      int type = DnsPacket.convertId(two_bytes);
+      if (type != DnsPacket.A_TYPE || type != DnsPacket.NS_TYPE || type != DnsPacket.CNAME_TYPE ||
+	  type != DnsPacket.MX_TYPE) {
+	//System.out.println(unexpected_str + "Unexpected record type");
+	repositionBuffer(recvData, 6);
+	continue;
+      }
 
-    }
+      // class
+      recvData.get(two_bytes);
+      if (DnsPacket.convertId(two_bytes) != 0x0001) {
+	System.out.println(unexpected_str + "Unexpected class value");
+	repositionBuffer(recvData, 4);
+	continue;
+      }
+
+      // TTL
+      int TTL = recvData.getInt();
+      if (TTL < 0) {
+	System.out.println(unexpected_str + "Negative TTL");
+      }
+
+      // rdlength
+      recvData.get(two_bytes);
+      int rdlength = DnsPacket.convertId(two_bytes);
+
+      String[] alias = DnsPacket.parseRData(recvData, rdlength, type);
+      if (type == DnsPacket.A_TYPE || type == DnsPacket.CNAME_TYPE || type == DnsPacket.NS_TYPE) {
+	System.out.println(DnsPacket.typeToString(type) + "\t" + alias + "\t" + TTL + ((auth) ? "auth" : "noauth"));
+      } else if (type == DnsPacket.MX_TYPE) {
+	System.out.println("MX\t" + alias[0] + "\t" + alias[1] + "\t" + TTL + ((auth) ? "auth" : "noauth"));	
+      } else {
+	System.out.println("ERROR\tUnrecognized DNS type");
+      }
+   }
 
     //=============ANSWER END=========================
 
@@ -231,5 +269,13 @@ public class DnsClient {
       ret += Integer.toBinaryString((convert[i] & 0xFF) + 0x100).substring(1);
     }
     return ret;
+  }
+
+  private static void repositionBuffer(ByteBuffer buff, int offset) {
+    byte two_bytes[] = new byte[2];
+    buff.position(buff.position() + offset);
+    buff.get(two_bytes);
+    int rdlength = DnsPacket.convertId(two_bytes);
+    buff.position(buff.position() + rdlength);
   }
 }
