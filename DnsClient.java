@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 
 public class DnsClient {
 
@@ -70,32 +71,31 @@ public class DnsClient {
 
     DnsPacket packet = new DnsPacket(server, name, type);
 
-    DnsPacket.convertId(packet.id);
+    byte[] data = sendRequest(packet, timeout, max_retries, port);
+   
+    if (data.length != 0) parseReceivedData(packet, data);
 
-    //sendRequest(packet, timeout, max_retries, port);
-    
     return;
   }
 
-  static void sendRequest(DnsPacket packet, int timeout, int max_retries, int port) {
+  static byte[] sendRequest(DnsPacket packet, int timeout, int max_retries, int port) {
     try {
       DatagramSocket socket = new DatagramSocket();
     
       try {
-        socket.setSoTimeout(timeout);
+        socket.setSoTimeout(timeout * 1000);
       } catch (SocketException se) {
         System.out.println("ERROR\tFailed to set socket timeout " + timeout);
         return (new byte[0]);
       }
 
-      System.out.println("DnsClient sending request for " + packet.name);
+      System.out.println("\nDnsClient sending request for " + packet.name);
       System.out.println("Server: " + packet.destServer.toString().substring(1));
-      System.out.println("Request type: " + packet.type);
+      System.out.println("Request type: " + packet.type + "\n");
 
       byte[] sendData = new byte[1024];
       byte[] receiveData = new byte[1024];
-      sendData = packet.name.getBytes();
-      DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.destServer, port);
+      DatagramPacket sendPacket = new DatagramPacket(packet.data.array(), packet.data.array().length, packet.destServer, port);
       DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
    
       int attempt = 0;
@@ -125,22 +125,27 @@ public class DnsClient {
         return (new byte[0]);
       }
 
-      System.out.println("\nResponse received after " + millis / 1000.0 + " seconds (" + attempt + " retries)");
+      System.out.println("Response received after " + millis / 1000.0 + " seconds (" + attempt + " retries)");
 
-      String receivedStr = new String(receivePacket.getData());
-      System.out.println("FROM SERVER: " + receivedStr);
+      //String receivedStr = new String(receivePacket.getData());
+      //System.out.println("FROM SERVER: " + receivedStr);
 
       socket.close();
 
+      return (receivePacket.getData());
+
     } catch (SocketException se) {
 	System.out.println("ERROR\tCould not create socket");
-	return;
+	return (new byte[0]);
     }
  }
 
   static void parseReceivedData(DnsPacket packet, byte[] data) {
     boolean auth = false;
-/*
+
+    //ByteBuffer recvData;
+    //recvData = ByteBuffer.allocate(data.length);
+   
     // compare the ids
     if (packet.id[0] != data[0] && packet.id[1] != data[1]) {
 	System.out.println(unexpected_str + "Query and Response ids do not match");
@@ -148,27 +153,50 @@ public class DnsClient {
     }
 
     // check for the response flag
-    if ((int)data[2] & 0x80 != 0x80) {
+    if (((int)data[2] & 0x80) != 0x80) {
 	System.out.println(unexpected_str + "Packet received does not contain a DNS response");
     }
-
+    
     // Check the OPCODE
-    if ((int)data[2] & 0x78 != 0x00) {
+    if (((int)data[2] & 0x78) != 0x00) {
 	System.out.println(unexpected_str + "Response is not for a standard query");
     }
 
     // Check the auth bit
-    auth = ((int)data[2] & 0x04 == 0x04) ? 1 : 0;
+    auth = (((int)data[2] & 0x04) == 0x04) ? true : false;
 
     // Check RA
-    if ((int)data[3] & 0x80 != 0x80) {
-	System.out.println("Warning: Server does not support recursive queries");
+    if (((int)data[3] & 0x80) != 0x80) {
+	System.out.println("WARNING\tServer does not support recursive queries");
     }
 
-    // parse the header data - 6 16-bit
-    ByteBuffer recvData;
-    recvData.allocate(data.length);
-*/
+    // Check the RCode
+    int rcode = (int)data[3] & 0x0F;
+    switch (rcode) {
+      case 0:
+	break;
+      case 1:
+        System.out.println("ERROR\tResponse from server returned: Format Error");
+        break;
+      case 2:
+        System.out.println("ERROR\tResponse from server returned: Server Failure");
+        break;
+      case 3:
+        if (auth) System.out.println("NOTFOUND\tDomain name does not exist" + packet.name);
+        break;
+      case 4:
+        System.out.println("ERROR\tResponse from server returned: Not implemented. Server does not support requested query");
+        break;
+      case 5:
+        System.out.println("ERROR\tResponse form server returned: Requested operation refused");
+        break;
+      default:
+        System.out.println("WARNING\tUnknown return code from server");
+        break;
+    }
+
+ //   int ancount = 
+    System.out.println("no formatting issues");
  }
 
 }

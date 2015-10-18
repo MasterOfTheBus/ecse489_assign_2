@@ -48,8 +48,14 @@ public class DnsPacket {
     byte[] header=constructHeader();
     byte[] question=constructQuestion();
     
-    data.allocate(header.length+question.length);
-    
+    data = ByteBuffer.allocate(header.length+question.length);
+   
+    if (data == null) {
+	System.out.println("byte buffer is null");
+    } else if (header == null) {
+	System.out.println("header is null");
+    }
+
     for(int i=0;i<header.length;i++){
     	data.put(header[i]);
     }
