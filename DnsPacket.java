@@ -221,32 +221,43 @@ public class DnsPacket {
     }
   }
 
-  static final int headerLength = 12; // bytes
-
-  public static String parseName(ByteBuffer data) {
+  private static int checkCompression(ByteBuffer data) {
     int position = -1;
-    
-    String domain = "";
     byte fromBuf = data.get();
     if ((fromBuf & 0xc0) == (0xc0)) {
-      byte[] two_bytes = {(new Integer(fromBuf & 0x03)).byteValue(), data.get()};
+      byte[] two_bytes = {(new Integer(fromBuf & 0x3f)).byteValue(), data.get()};
       position = data.position();
       int newPos = convertId(two_bytes);
       data.position(newPos);
     } else {
       data.position(data.position() - 1);
     }
+    return position;
+  }
+
+  public static String parseName(ByteBuffer data) {
+    int position = -1;
+
+    String domain = "";
+    position = checkCompression(data);
     int label_length = (int)data.get();
+
     while (label_length != 0) {
       for (int i = 0; i < label_length; i++) {
-	domain += ((char)data.get());
+        domain += ((char)data.get());
       }
+      domain += ".";
+
+      int temp = checkCompression(data);
+      if (temp != -1) position = temp;
 
       label_length = (int)data.get();
+
     }
 
     if (position != -1) data.position(position);
-    return domain;
+
+    return domain.substring(0, domain.length() - 1);
   }
 
   public static String[] parseRData(ByteBuffer data, int length, int type) {
@@ -262,10 +273,7 @@ public class DnsPacket {
     } else if (type == NS_TYPE) {
       ret = new String[]{parseName(data)};
     } else if (type == CNAME_TYPE) {
-      ret = new String[]{""};
-      for (int i = 0; i < length; i++) {
-	ret[0] += (char)data.get();
-      }
+        ret = new String[]{parseName(data)};
     } else if (type == MX_TYPE) {
       ret = new String[]{"", ""};
       byte[] two_bytes = new byte[2];

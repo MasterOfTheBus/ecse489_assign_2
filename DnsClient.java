@@ -229,8 +229,10 @@ public class DnsClient {
   private static void repositionBuffer(ByteBuffer buff, int offset) {
     byte two_bytes[] = new byte[2];
     buff.position(buff.position() + offset);
+    System.out.println("repositioned to " + buff.position());
     buff.get(two_bytes);
     int rdlength = DnsPacket.convertId(two_bytes);
+    System.out.println("reposition +" + rdlength);
     buff.position(buff.position() + rdlength);
   }
 
@@ -246,7 +248,7 @@ public class DnsClient {
       if (type != DnsPacket.A_TYPE && type != DnsPacket.NS_TYPE && type != DnsPacket.CNAME_TYPE &&
 	  type != DnsPacket.MX_TYPE) {
 	System.out.println("Unrecognized record type " + type);
-	repositionBuffer(recvData, 6);
+	//repositionBuffer(recvData, 6);
 	continue;
       }
 
@@ -254,7 +256,7 @@ public class DnsClient {
       recvData.get(two_bytes);
       if (DnsPacket.convertId(two_bytes) != 0x0001) {
 	System.out.println(unexpected_str + "Unexpected class value");
-	repositionBuffer(recvData, 4);
+	//repositionBuffer(recvData, 4);
 	continue;
       }
 
@@ -268,6 +270,7 @@ public class DnsClient {
       recvData.get(two_bytes);
       int rdlength = DnsPacket.convertId(two_bytes);
 
+      // RData
       String[] alias = DnsPacket.parseRData(recvData, rdlength, type);
       if (type == DnsPacket.A_TYPE || type == DnsPacket.CNAME_TYPE || type == DnsPacket.NS_TYPE) {
 	System.out.println(DnsPacket.typeToString(type) + "\t" + alias[0] + "\t" + TTL + "\t" + ((auth) ? "auth" : "noauth"));
