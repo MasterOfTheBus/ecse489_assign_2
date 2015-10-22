@@ -35,7 +35,12 @@ public class DnsClient {
           timeout = Integer.parseInt(args[i+1]);
 	  i++;
 	} catch (NumberFormatException e) {
-	  System.out.println("ERROR\tIncorrect input syntax: Timeout must be a positive integer.");
+	  System.out.println("ERROR\tInvalid timeout value: " + args[i+1]);
+	  return;
+	}
+	if (timeout < 0) {
+	  System.out.println("ERROR\tInvalid timeout value: timeout must be a positive integer");
+	  return;
 	}
       } else if (args[i].startsWith("-r")) {
 	if (i + 1 >= args.length) {
@@ -46,7 +51,11 @@ public class DnsClient {
   	  max_retries = Integer.parseInt(args[i+1]);
 	  i++;
 	} catch (NumberFormatException e) {
-	  System.out.println("ERROR\tIncorrect input syntax: Max_retries must be a positive integer.");
+	  System.out.println("ERROR\tIncorrect retries value: " + args[i+1]);
+	  return;
+	}
+	if (max_retries < 0) {
+	  System.out.println("ERROR\tIncorrect retries value: retries must be a positive integer");
 	  return;
 	}
       } else if (args[i].contains("-mx") || args[i].contains("-ns")) {
@@ -60,7 +69,11 @@ public class DnsClient {
   	  port = Integer.parseInt(args[i+1]);
 	  i++;
 	} catch (NumberFormatException e) {
-	  System.out.println("ERROR\tIncorrect input syntax: Port must be a positive integer.");
+	  System.out.println("ERROR\tIncorrect port value: " + args[i+1]);
+	  return;
+	}
+	if (port < 0) {
+	  System.out.println("ERROR\tIncorrect port value: port must be a positive integer");
 	  return;
 	}
       } else {
@@ -192,7 +205,10 @@ public class DnsClient {
     recvData.get(two_bytes); // bytes 6, 7
     int ancount = DnsPacket.convertId(two_bytes); 
 
-    recvData.position(recvData.position() + 2);
+    recvData.get(two_bytes);
+    int nscount = DnsPacket.convertId(two_bytes);
+
+//recvData.position(recvData.position() + 2);
     recvData.get(two_bytes); // bytes 10, 11
     int arcount = DnsPacket.convertId(two_bytes);
 
