@@ -22,9 +22,16 @@ public class DnsPacket {
     for (int i = 0; i < str2byte.length; i++) {
       int end = server.indexOf('.', periodIndex);
       if (end == -1) end = server.length();
-      int fromAddr = Integer.parseInt(server.substring(start, end));
+      int fromAddr;
+      try {
+      fromAddr = Integer.parseInt(server.substring(start, end));
+      } catch (NumberFormatException e) {
+	System.out.println("ERROR\tInvalid IP address: " + server);
+	return;
+      }
       if (fromAddr < 0 || fromAddr > 255) {
-	System.out.printf("ERROR\tInvalid IP address: " + server);
+	System.out.println("ERROR\tInvalid IP address: " + server);
+	return;
       }
       str2byte[i] = (new Integer(fromAddr)).byteValue();
 
@@ -36,6 +43,7 @@ public class DnsPacket {
       destServer = InetAddress.getByAddress(str2byte);
     } catch (UnknownHostException e) {
       System.out.println("ERROR\tUnknown Host: " + server);
+      destServer = null;
       return;
     }
 

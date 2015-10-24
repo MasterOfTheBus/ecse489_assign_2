@@ -83,7 +83,7 @@ public class DnsClient {
     }
 
     DnsPacket packet = new DnsPacket(server, name, type);
-
+    if (packet.destServer == null) return;
     byte[] data = sendRequest(packet, timeout, max_retries, port);
    
     if (data.length != 0) parseReceivedData(packet, data);
