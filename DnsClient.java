@@ -264,7 +264,7 @@ public class DnsClient {
       if (type != DnsPacket.A_TYPE && type != DnsPacket.NS_TYPE && type != DnsPacket.CNAME_TYPE &&
 	  type != DnsPacket.MX_TYPE) {
 	System.out.println("Unrecognized record type " + type);
-	//repositionBuffer(recvData, 6);
+	repositionBuffer(recvData, 6);
 	continue;
       }
 
@@ -272,7 +272,7 @@ public class DnsClient {
       recvData.get(two_bytes);
       if (DnsPacket.convertId(two_bytes) != 0x0001) {
 	System.out.println(unexpected_str + "Unexpected class value");
-	//repositionBuffer(recvData, 4);
+	repositionBuffer(recvData, 4);
 	continue;
       }
 

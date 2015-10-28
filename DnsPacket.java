@@ -257,7 +257,7 @@ public class DnsPacket {
       domain += ".";
 
       int temp = checkCompression(data);
-      if (temp != -1) position = temp;
+      if (temp != -1 && position == -1) position = temp;
 
       label_length = (int)data.get();
 
